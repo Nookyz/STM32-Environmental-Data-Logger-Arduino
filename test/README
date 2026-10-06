@@ -1,0 +1,142 @@
+
+This directory is intended for PlatformIO Test Runner and project tests.
+
+Unit Testing is a software testing method by which individual units of
+source code, sets of one or more MCU program modules together with associated
+control data, usage procedures, and operating procedures, are tested to
+determine whether they are fit for use. Unit testing finds problems early
+in the development cycle.
+
+More information about PlatformIO Unit Testing:
+- https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+
+## Testing
+
+The project uses **PlatformIO Unit Testing** with the **Unity** test framework.
+
+### Hardware
+
+Tests are executed directly on the STM32F401CCU board.
+
+Required connections:
+
+**ST-Link → STM32**
+
+```text
+3.3V  →  3.3V
+GND   →  GND
+SWCLK →  SWCLK / CLK
+SWDIO →  SWDIO / DIO
+```
+
+ST-Link is used to upload the test firmware to the STM32.
+
+**CP2102 → STM32**
+
+```text
+RXI  →  PA2 / USART2_TX
+TXD  →  PA3 / USART2_RX
+GND  →  GND
+3.3V →  3.3V
+```
+
+CP2102 is used to receive test output through the UART interface.
+
+`DTR` and `+5V` are not required.
+
+The CP2102 must be connected to the PC and detected as a COM port.
+In the current setup the port is `COM3`.
+
+### Test structure
+
+```text
+test/
+└── test_led/
+    └── test_main.cpp
+```
+
+The LED tests check:
+
+* `OFF` mode
+* `ON` mode
+* `SLOW_BLINK` mode
+* `FAST_BLINK` mode
+* transition from blink mode to `OFF`
+
+### Running tests
+
+Make sure both **ST-Link** and **CP2102** are connected to the PC.
+
+Check that CP2102 is detected:
+
+```powershell
+pio device list
+```
+
+Expected output:
+
+```text
+COM3
+----
+Hardware ID: USB VID:PID=10C4:EA60
+Description: Silicon Labs CP210x USB to UART Bridge (COM3)
+```
+
+Run all tests:
+
+```powershell
+pio test -e genericSTM32F401CC
+```
+
+Run only the LED tests:
+
+```powershell
+pio test -e genericSTM32F401CC -f test_led
+```
+
+For verbose output:
+
+```powershell
+pio test -e genericSTM32F401CC -f test_led -v
+```
+
+### Test process
+
+When running the tests:
+
+```text
+PC
+├── ST-Link
+│   └── STM32F401CCU
+│       └── test firmware
+│
+└── CP2102
+    └── USART2
+        └── STM32F401CCU
+```
+
+PlatformIO first uploads the test firmware using ST-Link.
+
+After uploading, the test starts on the STM32 and PlatformIO reads the test output from the configured serial port (`COM3`).
+
+The LED test verifies that the LED behaves correctly in each mode and that switching from `SLOW_BLINK` or `FAST_BLINK` to `OFF` completely stops blinking.
+
+### Configuration
+
+The test configuration is defined in `platformio.ini`:
+
+```ini
+test_framework = unity
+test_build_src = true
+test_port = COM3
+test_speed = 115200
+```
+
+Serial communication uses:
+
+```text
+115200 baud
+8 data bits
+No parity
+1 stop bit
+```
